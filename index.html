@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #geral{
+            width: 100%;
+            height: 100%;
+        }
+        #step1{
+            max-width: 500px;
+            width: 100%;
+            height: fit-content;
+            padding: 30px;
+            border: 1px solid #cdcdcd;
+            margin: auto;
+            box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        #step2{
+            display: none;
+            max-width: 500px;
+            width: 100%;
+            height: fit-content;
+            padding: 30px;
+            border: 1px solid #cdcdcd;
+            margin: auto;
+            box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+        }
+        #step3{
+            display: none;
+            max-width: 500px;
+            width: 100%;
+            height: fit-content;
+            padding: 30px;
+            border: 1px solid #cdcdcd;
+            margin: auto;
+            box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+        }
+        #carregando{
+            display: none;
+        }
+        #formList{
+            display: none;
+            max-width: 500px;
+            width: 100%;
+            height: fit-content;
+            padding: 30px;
+            border: 1px solid #cdcdcd;
+            margin: auto;
+            box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+        }
+        #listar{
+            display: none;
+            max-width: 500px;
+            width: 100%;
+            height: fit-content;
+            padding: 30px;
+            border: 1px solid #cdcdcd;
+            margin: auto;
+            box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="geral">
+        <div id="step1">
+            <form id="form" enctype="multipart/form-data">
+                <input type="file" name="imageBase64" id="imageBase64" required>
+                <input type="text" name="customer_code" id="customer_code" placeholder="Código do cliente" required>
+                <select name="measure_type" id="measure_type" required>
+                    <option value="WATER">Água</option>
+                    <option value="GAS">Gás</option>
+                </select>
+                <input type="submit" id="submeter" value="Enviar">
+            </form><button onclick="openDivList()">Listar registros por cliente</button>
+            <div id="carregando">
+                <img src="carregando.gif" alt="carregando">
+            </div>
+        </div>
+        <div id="step2">
+            <form id="form2" enctype="multipart/form-data">
+                Confirmar/corrigir o valor lido: 
+                <input type="number" name="measure_value" id="measure_value" required>
+                <input type="submit" id="submeter" value="Confirmar">
+            </form>
+        </div>
+        <div id="step3"></div>
+        <div id="formList">
+            <form id="form3" enctype="multipart/form-data">
+                <input type="text" name="customerCode" id="customerCode" placeholder="Insira o código do cliente" required>
+                <select name="filter_type" id="filter_type" required>
+                    <option value="TODOS" selected>Todos</option>
+                    <option value="WATER">Água</option>
+                    <option value="GAS">Gás</option>
+                </select>
+                <input type="submit" id="submeter" value="Listar">
+            </form>
+            <button onclick="voltar()">Voltar</button>
+        </div>
+        <div id="listar"></div>
+    </div>
+    <script>
+        const urlEndpoint = 'http://localhost:3000/';
+        const form = document.getElementById('form');
+        const form2 = document.getElementById('form2');
+        const form3 = document.getElementById('form3');
+        // console.log(form)
+        var fileBase64=null;
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        var obj;
+        const measure_value = document.getElementById('measure_value');
+        const carregando = document.getElementById('carregando');
+        const formList = document.getElementById('formList');
+        const listar = document.getElementById('listar');
+
+
+        document.getElementById('imageBase64').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            // console.log(file)
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const base64String = e.target.result.split(',')[1]; // Remove a parte 'data:image/*;base64,'
+                    // console.log(base64String)
+                    fileBase64=base64String;
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        });
+        form.addEventListener('submit', async function (e){
+            e.preventDefault();
+            // console.log(this)
+            if(fileBase64==null){
+                return;
+            }
+            const month = ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'];
+            let date = new Date();
+            var measure_datetime = date.getFullYear()+'-'+month[date.getMonth()]+'-'+date.getDate();
+            var customer_code = document.getElementById('customer_code').value;
+            var measure_type = document.getElementById('measure_type').value;
+            // console.log(measure_datetime)
+            if(fileBase64!=null){
+                carregando.style.display = 'flex';
+                await fetch(urlEndpoint+'upload',{
+                    method: 'POST',
+                    headers: {
+                        // 'user-agent': 'Teste robson',
+                        accept: 'application/json',
+                        // host: 'localhost:3000',
+                        // 'accept-encoding': 'gzip, deflate, br',
+                        // connection: 'keep-alive',
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        image: fileBase64,
+                        customer_code: customer_code,
+                        measure_datetime: measure_datetime,
+                        measure_type: measure_type
+                    })
+                })
+                .then((response)=>response.json())
+                .then((json)=>{
+                    console.log(json)
+                    obj = {
+                        image_url: json.image_url,
+                        measure_value: json.measure_value,
+                        measure_uuid: json.measure_uuid,
+                    };
+                    measure_value.value = json.measure_value;
+                    if(json.error_code==undefined){
+                        step1.style.display='none';
+                        step2.style.display='flex';
+                        let img = document.createElement('img');
+                        img.src=json.image_url;
+                        img.setAttribute('style', 'max-height:200px;');
+                        step2.appendChild(img);
+                    }else{
+                        step1.style.display='none';
+                        step3.style.display='flex';
+                        step3.innerHTML = "Falha no primeiro passo. Erro: "+json.error_description;
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
+        })
+
+
+        /*
+        CONFIRMAR OU CORRIGIR O VALOR LIDO PELO LLM
+        */
+        form2.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            await fetch(urlEndpoint+'confirm', {
+                method: 'PATCH',
+                headers: {
+                    accept: 'application/json',
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify({
+                    measure_uuid: obj.measure_uuid,
+                    confirmed_value: measure_value.value
+                })
+            })
+            .then((response)=>response.json())
+            .then((json)=>{
+                step2.style.display='none';
+                step3.style.display='flex';
+                step3.innerHTML = "Sucesso no cadastro."
+                console.log(json)
+            })
+            .catch((error)=>{
+                step2.style.display='none';
+                step3.style.display='flex';
+                step3.innerHTML = "Falha ao cadastrar. Erro: "+error;
+            })
+        })
+        
+
+
+        /*
+            Listar os registros pelo cliente
+        */
+       function openDivList(){
+        step1.style.display='none';
+        formList.style.display='flex';
+       }
+       function voltar(){
+        formList.style.display='none';
+        step1.style.display='flex';
+        listar.style.display='none';
+       }
+       form3.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const customerCode = document.getElementById('customerCode');
+        const filter_type = document.getElementById('filter_type');
+        var filter = '';
+        if(filter_type.value!='TODOS'){
+            filter='?measure_type='+filter_type.value;
+        }
+        await fetch(urlEndpoint+customerCode.value+'/list'+filter, {
+            method: 'GET'
+        })
+        .then((response)=>response.json())
+        .then((json)=>{
+            console.log(json)
+            listar.style.display='flex';
+            var html = '';
+            if(json.error_code==undefined){
+                html+='<div>';
+                html+='<div>Cliente: '+json.customer_code+'</div>';
+                for(let i=0; i<json.measures.length; i++){
+                    html+='<div style="margin: 10px 0px; border: 1px solid #cdcdcd; border-radius: 5px; padding: 20px;">';
+                    html+='<div>Data do cadastro: '+json.measures[i].measureDatetime+'</div>';
+                    html+='<div>Tipo: '+json.measures[i].measureType+'</div>';
+                    html+='<div>ID: '+json.measures[i].id+'</div>';
+                    html+='<div>Valor da leitura do medidor: '+json.measures[i].MeterValue+'</div>';
+                    html+='<div>Confirmado: '+json.measures[i].confirmed+'</div>';
+                    html+='<div><img src="'+json.measures[i].image+'" style="max-width:100px; max-height: 100px;"></div>';
+                    html+='</div>';
+                }
+                html+='</div>';
+                listar.innerHTML=html;
+            }else{
+                html=json.error_description;
+                listar.innerHTML=html;
+            }
+        })
+       })
+    </script>
+</body>
+</html>

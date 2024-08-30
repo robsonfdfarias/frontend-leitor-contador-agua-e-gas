@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter Imagem para Base64</title>
+</head>
+<body>
+    <h1>Converter Imagem para Base64</h1>
+    <input type="file" id="fileInput">
+    <br>
+    <textarea id="base64Output" rows="10" cols="80" readonly></textarea>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const base64String = e.target.result.split(',')[1]; // Remove a parte 'data:image/*;base64,'
+                    document.getElementById('base64Output').value = base64String;
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
